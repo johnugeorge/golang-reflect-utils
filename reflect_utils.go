@@ -72,13 +72,12 @@ type Addr struct {
 }
 
 func main() {
-	user := User{"John Doe The Fourth", 20, "Random String", []string{"johnu", "kuttan"}, map[string]int{"jo": 1, "john": 2}, Addr{"Galleria", "419", 95134}, []Addr{Addr{"Galleria", "419", 95134}, Addr{"Galleria", "419", 95134}}, &Addr{"Galleria", "419", 95134}}
+	user := User{"John Doe The Fourth", 20, "Random String", []string{"Jack", "Master"}, map[string]int{"jo": 1, "john": 2}, Addr{"Palo", "142", 96132}, []Addr{Addr{"Alto", "131", 96132}, Addr{"Stanford", "432", 96132}}, &Addr{"University", "445", 96132}}
 
 	//res := Validate(reflect.ValueOf(user).Elem())
 	res := PrintDetails(&user)
 
 	fmt.Println(res)
-
 	fmt.Println(GetStructFields(res))
 	fmt.Println(GetTag(res, "name"))
 	fmt.Println(GetValue(res, "addr"))
@@ -88,7 +87,9 @@ func main() {
 	fmt.Println(PrintDetails(&str))
 
 	mapStr := map[string]interface{}{"hello": "hi", "here": "world"}
-	fmt.Println(PrintDetails(&mapStr))
+	res = PrintDetails(&mapStr)
+	fmt.Println(res)
+	fmt.Println(GetValue(res, "hello"))
 
 	created := create()
 	fmt.Println(PrintDetails(&created))
@@ -97,22 +98,56 @@ func main() {
 
 func GetValue(arg interface{}, key string) interface{} {
 	mapArg := arg.(map[string]interface{})
-	field := mapArg[key].(map[string]interface{})
-	return field["value"]
+	if IsStruct(arg) {
+		field := mapArg[key].(map[string]interface{})
+		return field["value"]
+	} else {
+		field := mapArg["value"].(map[interface{}]interface{})
+		return field[key]
+	}
 }
 
 func GetType(arg interface{}, key string) interface{} {
 	mapArg := arg.(map[string]interface{})
-	field := mapArg[key].(map[string]interface{})
-	return field["type"]
+	if IsStruct(arg) {
+		field := mapArg[key].(map[string]interface{})
+		return field["type"]
+	} else {
+		fmt.Println("Argument is not a struct")
+		return nil
+		//field := mapArg["type"]
+		//return field
+	}
+
 }
 func GetTag(arg interface{}, key string) interface{} {
 	mapArg := arg.(map[string]interface{})
-	field := mapArg[key].(map[string]interface{})
-	return field["tags"]
+	if IsStruct(arg) {
+		field := mapArg[key].(map[string]interface{})
+		return field["tags"]
+	} else {
+		fmt.Println("Argument is not a struct")
+		return nil
+	}
+}
+
+func IsStruct(arg interface{}) bool {
+	mapArg := arg.(map[string]interface{})
+	if _, ok := mapArg["type"]; ok {
+		_, ok = mapArg["type"].(map[string]interface{})
+		if ok {
+			return true
+		} else {
+			return false
+		}
+	}
+	return true
 }
 
 func GetStructFields(arg interface{}) []string {
+	if !IsStruct(arg) {
+		fmt.Println("Argument is not struct")
+	}
 	mapArg := arg.(map[string]interface{})
 	keys := []string{}
 	for k := range mapArg {
@@ -136,6 +171,7 @@ func ParseFields(uValue reflect.Value) map[string]interface{} {
 		for i := 0; i < uValue.NumField(); i++ {
 			field := uValue.Field(i)
 			name := uValue.Type().Field(i).Name
+
 			fieldType := map[string]interface{}{}
 			fieldType["type"] = field.Kind()
 			if len(uValue.Type().Field(i).Tag) != 0 {
